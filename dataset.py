@@ -32,36 +32,68 @@ def nothing(x):
     pass
 
 
-def only_ver_linesP(lines):
-    """
-    ASSUMPTION: Probabilistic Hough transform is used.
-    """
+def sort_lines(set):
+    def sort_on_rho(line_bloc):
+        return abs(line_bloc[0][0])
+
+    set.sort(key=sort_on_rho)
+    return set
+
+
+def almost_ver(lines, tolerance):
     new_lines = []
-    MIN_ANGLE = 60
-    MAX_ANGLE = 120
-    print("MIN: ", np.radians(MIN_ANGLE))
-    print("MAX: ", np.radians(MAX_ANGLE))
     if lines is not None:
         for line in lines:
-            slope = (line[0][3]-line[0][1])/(line[0][2]-line[0][0])
-            angle = np.arctan(slope)
-            print(angle)
-            if angle >= np.radians(MIN_ANGLE) and angle <= np.radians(MAX_ANGLE):
+            theta = line[0][1]
+            if (theta <= np.deg2rad(0 + tolerance) or theta >= np.deg2rad(180 - tolerance)):
                 new_lines.append(line)
-    print("LEN NEW LINES:", len(new_lines))
     return new_lines
 
 
-def draw_linesP(frame, lines):
-    if lines is not None:
-        for i in range(0, len(lines)):
-            l = lines[i][0]
-            cv2.line(frame, (l[0], l[1]),
-                     (l[2], l[3]), (0, 255, 0), 3, cv2.LINE_AA)
-    return frame
+def reduce_lines(lines, tolerance):
+    """ 
+    * Reduce the set of lines to just the two lanes.
+    * Return just two lines
+    if (theta <= np.deg2rad(0+tolerance) or theta >= np.deg2rad(180 - tolerance)):
+    """
+
+    new_lines = almost_ver(lines, tolerance)
+    left = []
+    right = []
+
+    for line in new_lines:
+        if line[0][0] >= 0:
+            left.append(line)
+        else:
+            right.append(line)
+
+    rho1 = 0
+    theta1 = 0
+    rho2 = 0
+    theta2 = 0
+
+    for line in left:
+        rho1 += line[0][0]
+        theta1 += line[0][1]
+
+    for line in right:
+        rho2 += line[0][0]
+        theta2 += line[0][1]
+
+    try:
+        rho1 = rho1/len(left)
+        theta1 = theta1/len(left)
+        rho2 = rho2/len(right)
+        theta2 = theta2/len(right)
+    except:
+        pass
+
+    new_lines = [[[rho1, theta1]], [[rho2, theta2]]]
+
+    return new_lines
 
 
-def detect_lines(frame, l_thresh, u_thresh, app_size):
+def detect_lines(frame, l_thresh, u_thresh, app_size, tolerance):
     new_frame = frame
     new_frame = cv2.cvtColor(new_frame, cv2.COLOR_BGR2GRAY)
     new_frame = cv2.Canny(new_frame, l_thresh, u_thresh,
@@ -70,24 +102,25 @@ def detect_lines(frame, l_thresh, u_thresh, app_size):
     new_frame = cv2.GaussianBlur(new_frame, (5, 5), 0)
     new_frame = roi(new_frame, [vertices])
 
-    lines = cv2.HoughLines(new_frame, 1, np.pi/90, 300,
+    lines = cv2.HoughLines(new_frame, 1, np.pi/180, 300,
                            np.array([]))
+
+    lines = reduce_lines(lines, tolerance)
     return lines
 
 
-def draw_lines(frame, lines, tolerance):
+def draw_lines(frame, lines):
     if lines is not None:
         for i in range(0, len(lines)):
             theta = lines[i][0][1]
             rho = lines[i][0][0]
-            if (theta <= np.deg2rad(0+tolerance) or theta >= np.deg2rad(180 - tolerance)):
-                a = math.cos(theta)
-                b = math.sin(theta)
-                x0 = a * rho
-                y0 = b * rho
-                pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
-                pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
-                cv2.line(frame, pt1, pt2, (0, 255, 0), 3, cv2.LINE_AA)
+            a = math.cos(theta)
+            b = math.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
+            pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
+            cv2.line(frame, pt1, pt2, (0, 0, 255), 6, cv2.LINE_AA)
 
     return frame
 
@@ -116,7 +149,7 @@ if __name__ == "__main__":
                        upper_threshold_max, nothing)
     cv2.createTrackbar("App size", title_window, 3,
                        appSize_max, nothing)
-    cv2.createTrackbar("Tolerance", title_window, 40,
+    cv2.createTrackbar("Tolerance", title_window, 55,
                        tol_max, nothing)
 
     while True:
@@ -130,9 +163,9 @@ if __name__ == "__main__":
         tolerance = cv2.getTrackbarPos('Tolerance', title_window)
 
         lines = detect_lines(
-            frame, l_thresh, u_thresh, app_size)
+            frame, l_thresh, u_thresh, app_size, tolerance)
 
-        processed_frame = draw_lines(frame, lines, tolerance)
+        processed_frame = draw_lines(frame, lines)
 
         cv2.imshow(title_window, processed_frame)
 
