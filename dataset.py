@@ -1,174 +1,172 @@
 import numpy as np
 import cv2
-from mss import mss
-from PIL import Image
 import time
-from keymap import W, A, S, D, PressKey, ReleaseKey
 import math
+import win32gui
+import win32ui
+import win32con
+import win32api
+import os
 
-bounding_box = {'top': 32,
-                'left': 3,
-                'width': 800,
-                'height': 600}
+REGION = (3, 32, 800, 600)
+HEIGHT = 120
+WIDTH = 160
+TOTAL_TRAINING_SIZE = 400000
+MAX_FILE_SIZE = 16000
+DIR = "TrainingData/400K"
 
-low_threshold_max = 500
-upper_threshold_max = 600
-appSize_max = 20
-blurr_max = 20
-tol_max = 150
-title_window = "Dynamic Canny"
-
-vertices = np.array([[0, 600],
-                     [0, 400],
-                     [230, 305],
-                     [580, 305],
-                     [800, 400],
-                     [800, 600]])
-
-sct = mss()
+if(TOTAL_TRAINING_SIZE % MAX_FILE_SIZE != 0):
+    print("Illegal training and file size combination.")
+    exit(0)
 
 
-def nothing(x):
-    pass
+KEY_MAP = {
+    'W': [1, 0, 0, 0, 0, 0, 0, 0, 0],
+    'S': [0, 1, 0, 0, 0, 0, 0, 0, 0],
+    'A': [0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'D': [0, 0, 0, 1, 0, 0, 0, 0, 0],
+    'WS': [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    'WD': [0, 0, 0, 0, 0, 1, 0, 0, 0],
+    'SA': [0, 0, 0, 0, 0, 0, 1, 0, 0],
+    'SD': [0, 0, 0, 0, 0, 0, 0, 1, 0],
+    'NK': [0, 0, 0, 0, 0, 0, 0, 0, 1],
+    'default': [0, 0, 0, 0, 0, 0, 0, 0, 0],
+}
+
+KEY_LIST = ["\b"]
+for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ 123456789,.'£$/\\":
+    KEY_LIST.append(char)
 
 
-def sort_lines(set):
-    def sort_on_rho(line_bloc):
-        return abs(line_bloc[0][0])
-
-    set.sort(key=sort_on_rho)
-    return set
-
-
-def almost_ver(lines, tolerance):
-    new_lines = []
-    if lines is not None:
-        for line in lines:
-            theta = line[0][1]
-            if (theta <= np.deg2rad(0 + tolerance) or theta >= np.deg2rad(180 - tolerance)):
-                new_lines.append(line)
-    return new_lines
-
-
-def reduce_lines(lines, tolerance):
-    """ 
-    * Reduce the set of lines to just the two lanes.
-    * Return just two lines
-    if (theta <= np.deg2rad(0+tolerance) or theta >= np.deg2rad(180 - tolerance)):
+def key_check():
     """
-
-    new_lines = almost_ver(lines, tolerance)
-    left = []
-    right = []
-
-    for line in new_lines:
-        if line[0][0] >= 0:
-            left.append(line)
-        else:
-            right.append(line)
-
-    rho1 = 0
-    theta1 = 0
-    rho2 = 0
-    theta2 = 0
-
-    for line in left:
-        rho1 += line[0][0]
-        theta1 += line[0][1]
-
-    for line in right:
-        rho2 += line[0][0]
-        theta2 += line[0][1]
-
-    try:
-        rho1 = rho1/len(left)
-        theta1 = theta1/len(left)
-        rho2 = rho2/len(right)
-        theta2 = theta2/len(right)
-    except:
-        pass
-
-    new_lines = [[[rho1, theta1]], [[rho2, theta2]]]
-
-    return new_lines
+    Returns the currently active keys.
+    """
+    keys = []
+    for key in KEY_LIST:
+        if win32api.GetAsyncKeyState(ord(key)):
+            keys.append(key)
+    return keys
 
 
-def detect_lines(frame, l_thresh, u_thresh, app_size, tolerance):
-    new_frame = frame
-    new_frame = cv2.cvtColor(new_frame, cv2.COLOR_BGR2GRAY)
-    new_frame = cv2.Canny(new_frame, l_thresh, u_thresh,
-                          apertureSize=app_size,
-                          L2gradient=True)
-    new_frame = cv2.GaussianBlur(new_frame, (5, 5), 0)
-    new_frame = roi(new_frame, [vertices])
-
-    lines = cv2.HoughLines(new_frame, 1, np.pi/180, 300,
-                           np.array([]))
-
-    lines = reduce_lines(lines, tolerance)
-    return lines
+def keys_to_output(keys):
+    '''
+    Convert keys to a ...multi-hot... array
+     0  1  2  3  4   5   6   7    8
+    [W, S, A, D, WA, WD, SA, SD, NOKEY] boolean values.
+    '''
+    if ''.join(keys) in KEY_MAP:
+        return KEY_MAP[''.join(keys)]
+    return KEY_MAP['default']
 
 
-def draw_lines(frame, lines):
-    if lines is not None:
-        for i in range(0, len(lines)):
-            theta = lines[i][0][1]
-            rho = lines[i][0][0]
-            a = math.cos(theta)
-            b = math.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
-            pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
-            cv2.line(frame, pt1, pt2, (0, 0, 255), 6, cv2.LINE_AA)
+def grab_screen(region=None):
+    hwin = win32gui.GetDesktopWindow()
+    if region:
+        left, top, x2, y2 = region
+        width = x2 - left + 1
+        height = y2 - top + 1
+    else:
+        width = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        height = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+        top = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
 
-    return frame
+    hwindc = win32gui.GetWindowDC(hwin)
+    srcdc = win32ui.CreateDCFromHandle(hwindc)
+    memdc = srcdc.CreateCompatibleDC()
+    bmp = win32ui.CreateBitmap()
+    bmp.CreateCompatibleBitmap(srcdc, width, height)
+    memdc.SelectObject(bmp)
+    memdc.BitBlt((0, 0), (width, height), srcdc, (left, top), win32con.SRCCOPY)
 
+    signedIntsArray = bmp.GetBitmapBits(True)
+    img = np.frombuffer(signedIntsArray, dtype='uint8')
+    img.shape = (height, width, 4)
 
-def roi(frame, vertices):
-    mask = np.zeros_like(frame)
-    cv2.fillPoly(mask, vertices, 255)
-    masked = cv2.bitwise_and(frame, mask)
-    return masked
+    srcdc.DeleteDC()
+    memdc.DeleteDC()
+    win32gui.ReleaseDC(hwin, hwindc)
+    win32gui.DeleteObject(bmp.GetHandle())
+    img = cv2.resize(img, (160, 120))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = img/255.
+    return img
 
 
 if __name__ == "__main__":
 
-    for i in range(1, 4):
+    paused = False
+    training_data = []
+    count = 0
+    file_count = 0
+
+    if len(os.listdir(DIR)) != 0:
+        """
+        If some files already exists, adjust the value of count and file_count.
+        """
+        print("Existing Data found.")
+        files = os.listdir(DIR)
+        print("Existing files:")
+        print("--------------------------------------------------------")
+        for i, f in enumerate(files):
+            print('{}.'.format(i+1), f)
+
+        paths = [os.path.join(DIR, basename) for basename in files]
+        latest_file = max(paths, key=os.path.getctime)
+        print("LATEST FILE:", latest_file)
+        file_count = int(latest_file.split('_')[3].split('.')[0]) + 1
+        count = file_count * MAX_FILE_SIZE
+        print("FILE COUNT:", file_count)
+        print("TRAINING DATA ITEMS:", count)
+        print("--------------------------------------------------------")
+
+    for i in range(4, 0, -1):
         print(i)
         time.sleep(1)
-    """
-    * L: 126 U: 195
-    * L: 250 UL 350
-    * L: 156 U: 324
-    """
-    cv2.namedWindow(title_window)
-    cv2.createTrackbar("Low Thresh", title_window, 250,
-                       low_threshold_max, nothing)
-    cv2.createTrackbar("Up Thresh", title_window, 350,
-                       upper_threshold_max, nothing)
-    cv2.createTrackbar("App size", title_window, 3,
-                       appSize_max, nothing)
-    cv2.createTrackbar("Tolerance", title_window, 55,
-                       tol_max, nothing)
 
     while True:
-        start = time.time()
-        sct_img = sct.grab(bounding_box)
-        frame = np.array(sct_img)
+        if not paused:
+            start = time.time()
+            frame = grab_screen(REGION)
+            # cv2.imshow("Test", img)
 
-        l_thresh = cv2.getTrackbarPos('Low Thresh', title_window)
-        u_thresh = cv2.getTrackbarPos('Up Thresh', title_window)
-        app_size = cv2.getTrackbarPos('App Size', title_window)
-        tolerance = cv2.getTrackbarPos('Tolerance', title_window)
+            keys = key_check()
+            output = keys_to_output(keys)
+            training_data.append([frame, output])
 
-        lines = detect_lines(
-            frame, l_thresh, u_thresh, app_size, tolerance)
+            len_train = len(training_data)
 
-        processed_frame = draw_lines(frame, lines)
+            if count % 50 == 0:
+                print("TRAINING SIZE:", count, end='\r', flush=True)
 
-        cv2.imshow(title_window, processed_frame)
+            if len_train == MAX_FILE_SIZE:
+                file_name = os.path.join(
+                    DIR, "CAR_TD_400K_{}.npy".format(file_count))
+                print("--------------------------------------------------------")
+                print(file_name)
+                print("--------------------------------------------------------")
+                np.save(file_name, training_data)
+                file_count += 1
+                training_data = []
 
-        if (cv2.waitKey(1) & 0xFF) == ord('q'):
-            cv2.destroyAllWindows()
-            break
+            if count == TOTAL_TRAINING_SIZE:
+                print("COMPLETED.")
+                break
+
+            count += 1
+
+        keys = key_check()
+        if 'Q' in keys:
+            if paused:
+                paused = False
+                print('UNPAUSED')
+                time.sleep(1)
+            else:
+                print('PAUSED')
+                paused = True
+                time.sleep(1)
+
+        # if (cv2.waitKey(1) & 0xFF) == ord('q'):
+        #     cv2.destroyAllWindows()
+        #     break
