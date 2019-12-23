@@ -9,11 +9,11 @@ import win32api
 import os
 
 REGION = (3, 32, 800, 600)
-HEIGHT = 120
-WIDTH = 160
-TOTAL_TRAINING_SIZE = 400000
+HEIGHT = 180
+WIDTH = 240
+TOTAL_TRAINING_SIZE = 512000
 MAX_FILE_SIZE = 16000
-DIR = "TrainingData/400K"
+DIR = "TrainingData/500K/RAW"
 
 if(TOTAL_TRAINING_SIZE % MAX_FILE_SIZE != 0):
     print("Illegal training and file size combination.")
@@ -25,12 +25,15 @@ KEY_MAP = {
     'S': [0, 1, 0, 0, 0, 0, 0, 0, 0],
     'A': [0, 0, 1, 0, 0, 0, 0, 0, 0],
     'D': [0, 0, 0, 1, 0, 0, 0, 0, 0],
-    'WS': [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    'WA': [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    'AW': [0, 0, 0, 0, 1, 0, 0, 0, 0],
     'WD': [0, 0, 0, 0, 0, 1, 0, 0, 0],
+    'DW': [0, 0, 0, 0, 0, 1, 0, 0, 0],
     'SA': [0, 0, 0, 0, 0, 0, 1, 0, 0],
+    'AS': [0, 0, 0, 0, 0, 0, 1, 0, 0],
     'SD': [0, 0, 0, 0, 0, 0, 0, 1, 0],
+    'DS': [0, 0, 0, 0, 0, 0, 0, 1, 0],
     'NK': [0, 0, 0, 0, 0, 0, 0, 0, 1],
-    'default': [0, 0, 0, 0, 0, 0, 0, 0, 0],
 }
 
 KEY_LIST = ["\b"]
@@ -57,7 +60,7 @@ def keys_to_output(keys):
     '''
     if ''.join(keys) in KEY_MAP:
         return KEY_MAP[''.join(keys)]
-    return KEY_MAP['default']
+    return KEY_MAP['NK']
 
 
 def grab_screen(region=None):
@@ -121,7 +124,7 @@ if __name__ == "__main__":
         print("TRAINING DATA ITEMS:", count)
         print("--------------------------------------------------------")
 
-    for i in range(4, 0, -1):
+    for i in range(5, 0, -1):
         print(i)
         time.sleep(1)
 
@@ -142,7 +145,7 @@ if __name__ == "__main__":
 
             if len_train == MAX_FILE_SIZE:
                 file_name = os.path.join(
-                    DIR, "CAR_TD_400K_{}.npy".format(file_count))
+                    DIR, "CAR_{}.npy".format(file_count))
                 print("--------------------------------------------------------")
                 print(file_name)
                 print("--------------------------------------------------------")
