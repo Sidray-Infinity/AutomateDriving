@@ -9,32 +9,50 @@ import win32api
 import os
 
 REGION = (3, 32, 800, 600)
-HEIGHT = 180
-WIDTH = 240
-TOTAL_TRAINING_SIZE = 512000
+HEIGHT = 120
+WIDTH = 160
 MAX_FILE_SIZE = 16000
-DIR = "TrainingData/500K/RAW"
-
-if(TOTAL_TRAINING_SIZE % MAX_FILE_SIZE != 0):
-    print("Illegal training and file size combination.")
-    exit(0)
+DIR = "TrainingData/RAW"
 
 
-KEY_MAP = {
-    'W': [1, 0, 0, 0, 0, 0, 0, 0, 0],
-    'S': [0, 1, 0, 0, 0, 0, 0, 0, 0],
-    'A': [0, 0, 1, 0, 0, 0, 0, 0, 0],
-    'D': [0, 0, 0, 1, 0, 0, 0, 0, 0],
-    'WA': [0, 0, 0, 0, 1, 0, 0, 0, 0],
-    'AW': [0, 0, 0, 0, 1, 0, 0, 0, 0],
-    'WD': [0, 0, 0, 0, 0, 1, 0, 0, 0],
-    'DW': [0, 0, 0, 0, 0, 1, 0, 0, 0],
-    'SA': [0, 0, 0, 0, 0, 0, 1, 0, 0],
-    'AS': [0, 0, 0, 0, 0, 0, 1, 0, 0],
-    'SD': [0, 0, 0, 0, 0, 0, 0, 1, 0],
-    'DS': [0, 0, 0, 0, 0, 0, 0, 1, 0],
-    'NK': [0, 0, 0, 0, 0, 0, 0, 0, 1],
-}
+# KEY_MAP = {
+#     'W': [1, 0, 0, 0, 0, 0, 0, 0, 0],
+#     'S': [0, 1, 0, 0, 0, 0, 0, 0, 0],
+#     'A': [0, 0, 1, 0, 0, 0, 0, 0, 0],
+#     'D': [0, 0, 0, 1, 0, 0, 0, 0, 0],
+#     'WA': [0, 0, 0, 0, 1, 0, 0, 0, 0],
+#     'AW': [0, 0, 0, 0, 1, 0, 0, 0, 0],
+#     'WD': [0, 0, 0, 0, 0, 1, 0, 0, 0],
+#     'DW': [0, 0, 0, 0, 0, 1, 0, 0, 0],
+#     'SA': [0, 0, 0, 0, 0, 0, 1, 0, 0],
+#     'AS': [0, 0, 0, 0, 0, 0, 1, 0, 0],
+#     'SD': [0, 0, 0, 0, 0, 0, 0, 1, 0],
+#     'DS': [0, 0, 0, 0, 0, 0, 0, 1, 0],
+#     'NK': [0, 0, 0, 0, 0, 0, 0, 0, 1],
+# }
+
+# def keys_to_output(keys):
+#     '''
+#     Convert keys to a ...multi-hot... array
+#      0  1  2  3  4   5   6   7    8
+#     [W, S, A, D, WA, WD, SA, SD, NOKEY] boolean values.
+#     '''
+#     if ''.join(keys) in KEY_MAP:
+#         return KEY_MAP[''.join(keys)]
+#     return KEY_MAP['NK']
+
+"""
+[W, S, A, D, WA, WD, SA, SD, NK]
+"""
+W = [1, 0, 0, 0, 0, 0, 0, 0, 0]
+S = [0, 1, 0, 0, 0, 0, 0, 0, 0]
+A = [0, 0, 1, 0, 0, 0, 0, 0, 0]
+D = [0, 0, 0, 1, 0, 0, 0, 0, 0]
+WA = [0, 0, 0, 0, 1, 0, 0, 0, 0]
+WD = [0, 0, 0, 0, 0, 1, 0, 0, 0]
+SA = [0, 0, 0, 0, 0, 0, 1, 0, 0]
+SD = [0, 0, 0, 0, 0, 0, 0, 1, 0]
+NK = [0, 0, 0, 0, 0, 0, 0, 0, 1]
 
 KEY_LIST = ["\b"]
 for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ 123456789,.'£$/\\":
@@ -55,12 +73,30 @@ def key_check():
 def keys_to_output(keys):
     '''
     Convert keys to a ...multi-hot... array
-     0  1  2  3  4   5   6   7    8
+    0  1  2  3  4   5   6   7    8
     [W, S, A, D, WA, WD, SA, SD, NOKEY] boolean values.
     '''
-    if ''.join(keys) in KEY_MAP:
-        return KEY_MAP[''.join(keys)]
-    return KEY_MAP['NK']
+    if len(keys) == 0:
+        return NK
+
+    if 'W' in keys:
+        if 'A' in keys:
+            return WA
+        if 'D' in keys:
+            return WD
+        return W
+    if 'S' in keys:
+        if 'A' in keys:
+            return SA
+        if 'D' in keys:
+            return SD
+        return S
+    if 'A' in keys:
+        return A
+    if 'D' in keys:
+        return D
+
+    return [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
 def grab_screen(region=None):
@@ -91,7 +127,7 @@ def grab_screen(region=None):
     memdc.DeleteDC()
     win32gui.ReleaseDC(hwin, hwindc)
     win32gui.DeleteObject(bmp.GetHandle())
-    img = cv2.resize(img, (160, 120))
+    img = cv2.resize(img, (WIDTH, HEIGHT))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = img/255.
     return img
@@ -118,7 +154,7 @@ if __name__ == "__main__":
         paths = [os.path.join(DIR, basename) for basename in files]
         latest_file = max(paths, key=os.path.getctime)
         print("LATEST FILE:", latest_file)
-        file_count = int(latest_file.split('_')[3].split('.')[0]) + 1
+        file_count = int(latest_file.split('_')[2].split('.')[0]) + 1
         count = file_count * MAX_FILE_SIZE
         print("FILE COUNT:", file_count)
         print("TRAINING DATA ITEMS:", count)
@@ -132,7 +168,7 @@ if __name__ == "__main__":
         if not paused:
             start = time.time()
             frame = grab_screen(REGION)
-            # cv2.imshow("Test", img)
+            #cv2.imshow("Test", frame)
 
             keys = key_check()
             output = keys_to_output(keys)
@@ -140,22 +176,17 @@ if __name__ == "__main__":
 
             len_train = len(training_data)
 
-            if count % 50 == 0:
-                print("TRAINING SIZE:", count, end='\r', flush=True)
+            print("TRAINING SIZE:", count, end='\r', flush=True)
 
             if len_train == MAX_FILE_SIZE:
                 file_name = os.path.join(
-                    DIR, "CAR_{}.npy".format(file_count))
+                    DIR, "CAR_{}x{}_{}.npy".format(WIDTH, HEIGHT, file_count))
                 print("--------------------------------------------------------")
                 print(file_name)
                 print("--------------------------------------------------------")
                 np.save(file_name, training_data)
                 file_count += 1
                 training_data = []
-
-            if count == TOTAL_TRAINING_SIZE:
-                print("COMPLETED.")
-                break
 
             count += 1
 
