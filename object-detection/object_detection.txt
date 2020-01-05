@@ -1,0 +1,5 @@
+Objects to be identified:
+    ** Car (All vehicles are kept under one category)
+    ** Pearson
+    ** Tree
+    ** Pole

@@ -1,0 +1,16 @@
+item {
+    id: 1
+    name: 'vehicle'
+}
+item {
+    id: 2
+    name: 'person'
+}
+item {
+    id: 3
+    name: 'pole'
+}
+item {
+    id: 4
+    name: 'tree'
+}

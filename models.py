@@ -14,11 +14,11 @@ from keras.layers.normalization import BatchNormalization
 import numpy as np
 
 
-def alex_net_keras():
+def alex_net_keras(input_shape):
     model = Sequential()
 
     # 1st Convolutional Layer
-    model.add(Conv2D(filters=96, input_shape=(WIDTH, HEIGHT, 1), kernel_size=(11, 11),
+    model.add(Conv2D(filters=96, input_shape=input_shape, kernel_size=(11, 11),
                      strides=(4, 4), padding='valid'))
     model.add(Activation('relu'))
     # Pooling
