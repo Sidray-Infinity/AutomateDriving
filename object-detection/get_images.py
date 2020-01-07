@@ -52,28 +52,28 @@ if __name__ == "__main__":
         print(i)
         time.sleep(1)
 
-    count = 0
+    count = 222
     img_count = len(os.listdir("Images"))
 
-    if len(os.listdir("Images")) != 0:
-        """
-        If some files already exists, adjust the value of count.
-        """
-        print("Existing Data found.")
-        files = os.listdir("Images")
-        paths = [os.path.join("Images", basename) for basename in files]
-        latest_file = max(paths, key=os.path.getctime)
-        print("LATEST FILE:", latest_file)
-        count = int(latest_file.split('.')[0].split('-')[1]) + 1
-        print("COUNT:", count)
-        print("--------------------------------------------------------")
+    # if len(os.listdir("Images")) != 0:
+    #     """
+    #     If some files already exists, adjust the value of count.
+    #     """
+    #     print("Existing Data found.")
+    #     files = os.listdir("Images")
+    #     paths = [os.path.join("Images", basename) for basename in files]
+    #     latest_file = max(paths, key=os.path.getctime)
+    #     print("LATEST FILE:", latest_file)
+    #     count = int(latest_file.split('.')[0].split('-')[1]) + 1
+    #     print("COUNT:", count)
+    #     print("--------------------------------------------------------")
 
     while True:
         frame = grab_screen(REGION)
         # cv2.imshow("Win", frame)
         cv2.imwrite(f"Images/image-{count}.jpg", frame)
-        print("Image Count:", img_count)
-        img_count += 1
+        print("Image Count:", count)
+        #img_count += 1
         count += 1
         time.sleep(5)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
