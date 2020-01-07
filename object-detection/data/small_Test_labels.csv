@@ -1,0 +1,5 @@
+filename,width,height,class,xmin,ymin,xmax,ymax
+image-100.jpg,800,600,vehicle,418,320,435,342
+image-100.jpg,800,600,vehicle,470,329,484,342
+image-100.jpg,800,600,vehicle,383,327,398,343
+image-101.jpg,800,600,vehicle,412,329,434,341
