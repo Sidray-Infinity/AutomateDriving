@@ -30,7 +30,7 @@ def main():
     for folder in ['Train', 'Test']:
         image_path = os.path.join(os.getcwd(), ('images/'+folder))
         xml_df = xml_to_csv(image_path)
-        xml_df.to_csv((f'data/small_{folder}_labels.csv'), index=None)
+        xml_df.to_csv((f'data/130imgs_{folder}_labels.csv'), index=None)
         print('Successfully converted xml to csv.')
 
 
