@@ -1,0 +1,26 @@
+<annotation>
+	<folder>Images</folder>
+	<filename>image-133.jpg</filename>
+	<path>D:\AutomateDriving\object-detection\Images\image-133.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>800</width>
+		<height>600</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>pole</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>643</xmin>
+			<ymin>192</ymin>
+			<xmax>663</xmax>
+			<ymax>350</ymax>
+		</bndbox>
+	</object>
+</annotation>
