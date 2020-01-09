@@ -1,0 +1,26 @@
+<annotation>
+	<folder>Images</folder>
+	<filename>image-159.jpg</filename>
+	<path>D:\AutomateDriving\object-detection\Images\image-159.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>800</width>
+		<height>600</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>vehicle</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>282</xmin>
+			<ymin>330</ymin>
+			<xmax>417</xmax>
+			<ymax>421</ymax>
+		</bndbox>
+	</object>
+</annotation>
