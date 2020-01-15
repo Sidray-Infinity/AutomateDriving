@@ -12,13 +12,13 @@ from collections import defaultdict
 from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
-
+import time
 import cv2
 sys.path.append("..")
 
 # MODELS: 17346 19526 21701 23875 26046 28220
 
-MODEL_NAME = 'TrainedModels\model-28220\inference-graph'
+MODEL_NAME = 'ssd-tpu-model/inference-graph'
 PATH_TO_TEST_IMAGES_DIR = "test-images"
 
 PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
@@ -50,7 +50,7 @@ def load_image_into_numpy_array(image):
 
 def detect_objects(image_np):
 
-    #image_np = load_image_into_numpy_array(image)
+    # image_np = load_image_into_numpy_array(image)
 
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph) as sess:
@@ -88,6 +88,8 @@ if __name__ == "__main__":
 
                 image_np = load_image_into_numpy_array(image)
 
+                start = time.time()
+
                 # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
                 image_np_expanded = np.expand_dims(image_np, axis=0)
                 image_tensor = detection_graph.get_tensor_by_name(
@@ -107,6 +109,7 @@ if __name__ == "__main__":
                     [boxes, scores, classes, num_detections],
                     feed_dict={image_tensor: image_np_expanded})
                 # Visualization of the results of a detection.
+                print(time.time()-start)
                 vis_util.visualize_boxes_and_labels_on_image_array(
                     image_np,
                     np.squeeze(boxes),
@@ -118,7 +121,7 @@ if __name__ == "__main__":
 
                 cv2.imshow('object detection',
                            cv2.resize(image_np, (800, 600)))
-                cv2.waitKey(0)
+                # cv2.waitKey(0)
                 if cv2.waitKey(25) & 0xFF == ord('q'):
                     cv2.destroyAllWindows()
                     break

@@ -81,7 +81,7 @@ def no_keys():
 
 
 model = load_model(
-    "TrainedModels/SHUFFLED-240K-16%W/model-SHUFFLED-240K-16%W-16.h5")
+    "D:/AutomateDriving/TrainedModels/model-SHUFFLED-460k-15%W-21/model-SHUFFLED-460k-15%W-21.h5")
 
 if __name__ == "__main__":
 
@@ -99,7 +99,8 @@ if __name__ == "__main__":
             screen = grab_screen(region=REGION)
 
             prediction = model.predict([screen.reshape(-1, 160, 120, 1)])[0]
-            print(classes[np.argmax(prediction)])
+            print(classes[np.argmax(prediction)],
+                  prediction[np.argmax(prediction)])
 
             if np.argmax(prediction) == np.argmax(w):
                 straight()

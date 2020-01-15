@@ -11,10 +11,11 @@ if __name__ == "__main__":
 
     while True:
         image = grab_screen(REGION)
+        # image = cv2.resize(image, (80, 60))
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-        #print(type(image), image.shape)
+        # print(type(image), image.shape)
         image = detect_objects(image)
-        cv2.imshow('object detection', cv2.resize(image, (800, 600)))
+        cv2.imshow('object detection', cv2.resize(image, (800, 600))
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break

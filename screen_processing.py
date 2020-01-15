@@ -137,6 +137,8 @@ def roi(frame, vertices):
 * L: 126 U: 195
 * L: 250 UL 350
 * L: 156 U: 324
+"""
+if __name__ == "__main__":
     cv2.namedWindow(title_window)
     cv2.createTrackbar("Low Thresh", title_window, 250,
                        low_threshold_max, nothing)
@@ -166,5 +168,3 @@ def roi(frame, vertices):
         if (cv2.waitKey(1) & 0xFF) == ord('q'):
             cv2.destroyAllWindows()
             break
-
-"""
